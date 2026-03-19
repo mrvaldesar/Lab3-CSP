@@ -1,0 +1,175 @@
+name: GitHub Classroom Workflow
+
+on:
+  push:
+  workflow_dispatch:
+  repository_dispatch:
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  run-autograding-tests:
+    if: github.actor != 'github-classroom[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Restricción: Confederaciones (No UEFA)
+        id: restriccion-confederaciones-no-uefa
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Restricción: Confederaciones (No UEFA)
+          setup-command: python -m pip install -r requirements.txt
+          command: PYTHONPATH=. python -m pytest -q tests/test_constraints.py::test_confederation_constraint_non_uefa
+          timeout: 10
+          max-score: 5
+
+      - name: Restricción: Límite UEFA
+        id: restriccion-limite-uefa
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Restricción: Límite UEFA
+          command: PYTHONPATH=. python -m pytest -q tests/test_constraints.py::test_uefa_limit
+          timeout: 10
+          max-score: 5
+
+      - name: Restricción: Bombos (Pots)
+        id: restriccion-bombos-pots
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Restricción: Bombos (Pots)
+          command: PYTHONPATH=. python -m pytest -q tests/test_constraints.py::test_pot_constraint
+          timeout: 10
+          max-score: 5
+
+      - name: Restricción: Tamaño del grupo (4 equipos)
+        id: restriccion-tamano-del-grupo
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Restricción: Tamaño del grupo (4 equipos)
+          command: PYTHONPATH=. python -m pytest -q tests/test_constraints.py::test_group_size
+          timeout: 10
+          max-score: 5
+
+      - name: Restricción: Asignación válida general
+        id: restriccion-asignacion-valida-general
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Restricción: Asignación válida general
+          command: PYTHONPATH=. python -m pytest -q tests/test_constraints.py::test_valid_assignment
+          timeout: 10
+          max-score: 10
+
+      - name: Heurística: Selección MRV
+        id: heuristica-seleccion-mrv
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Heurística: Selección MRV
+          command: PYTHONPATH=. python -m pytest -q tests/test_heuristics.py::test_mrv_selection
+          timeout: 10
+          max-score: 10
+
+      - name: Heurística: MRV ignora variables asignadas
+        id: heuristica-mrv-ignora-variables-asignadas
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Heurística: MRV ignora variables asignadas
+          command: PYTHONPATH=. python -m pytest -q tests/test_heuristics.py::test_mrv_with_assigned_variables
+          timeout: 10
+          max-score: 5
+
+      - name: Heurística: Forward Checking
+        id: heuristica-forward-checking
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Heurística: Forward Checking
+          command: PYTHONPATH=. python -m pytest -q tests/test_heuristics.py::test_forward_checking
+          timeout: 10
+          max-score: 10
+
+      - name: Heurística: Fallo en Forward Checking
+        id: heuristica-fallo-en-forward-checking
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Heurística: Fallo en Forward Checking
+          command: PYTHONPATH=. python -m pytest -q tests/test_heuristics.py::test_forward_checking_failure
+          timeout: 10
+          max-score: 5
+
+      - name: Solver: Encuentra solución completa
+        id: solver-encuentra-solucion-completa
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Solver: Encuentra solución completa
+          command: PYTHONPATH=. python -m pytest -q tests/test_solver.py::test_full_solution_found
+          timeout: 30
+          max-score: 10
+
+      - name: Solver: Solución cumple 4 equipos por grupo
+        id: solver-solucion-cumple-4-equipos-por-grupo
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Solver: Solución cumple 4 equipos por grupo
+          command: PYTHONPATH=. python -m pytest -q tests/test_solver.py::test_all_groups_have_4_teams
+          timeout: 30
+          max-score: 10
+
+      - name: Solver: Validez total de la solución
+        id: solver-validez-total-de-la-solucion
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Solver: Validez total de la solución
+          command: PYTHONPATH=. python -m pytest -q tests/test_solver.py::test_solution_validity
+          timeout: 30
+          max-score: 10
+
+      - name: Solver: Backtracking sin preasignación
+        id: solver-backtracking-sin-preasignacion
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: Solver: Backtracking sin preasignación
+          command: PYTHONPATH=. python -m pytest -q tests/test_solver.py::test_backtracking_without_preassignment
+          timeout: 30
+          max-score: 10
+
+      - name: Autograding Reporter
+        uses: education/autograding-grading-reporter@v1
+        env:
+          RESTRICCION-CONFEDERACIONES-NO-UEFA_RESULTS: "${{ steps.restriccion-confederaciones-no-uefa.outputs.result }}"
+          RESTRICCION-LIMITE-UEFA_RESULTS: "${{ steps.restriccion-limite-uefa.outputs.result }}"
+          RESTRICCION-BOMBOS-POTS_RESULTS: "${{ steps.restriccion-bombos-pots.outputs.result }}"
+          RESTRICCION-TAMANO-DEL-GRUPO_RESULTS: "${{ steps.restriccion-tamano-del-grupo.outputs.result }}"
+          RESTRICCION-ASIGNACION-VALIDA-GENERAL_RESULTS: "${{ steps.restriccion-asignacion-valida-general.outputs.result }}"
+          HEURISTICA-SELECCION-MRV_RESULTS: "${{ steps.heuristica-seleccion-mrv.outputs.result }}"
+          HEURISTICA-MRV-IGNORA-VARIABLES-ASIGNADAS_RESULTS: "${{ steps.heuristica-mrv-ignora-variables-asignadas.outputs.result }}"
+          HEURISTICA-FORWARD-CHECKING_RESULTS: "${{ steps.heuristica-forward-checking.outputs.result }}"
+          HEURISTICA-FALLO-EN-FORWARD-CHECKING_RESULTS: "${{ steps.heuristica-fallo-en-forward-checking.outputs.result }}"
+          SOLVER-ENCUENTRA-SOLUCION-COMPLETA_RESULTS: "${{ steps.solver-encuentra-solucion-completa.outputs.result }}"
+          SOLVER-SOLUCION-CUMPLE-4-EQUIPOS-POR-GRUPO_RESULTS: "${{ steps.solver-solucion-cumple-4-equipos-por-grupo.outputs.result }}"
+          SOLVER-VALIDEZ-TOTAL-DE-LA-SOLUCION_RESULTS: "${{ steps.solver-validez-total-de-la-solucion.outputs.result }}"
+          SOLVER-BACKTRACKING-SIN-PREASIGNACION_RESULTS: "${{ steps.solver-backtracking-sin-preasignacion.outputs.result }}"
+        with:
+          runners: >-
+            restriccion-confederaciones-no-uefa,
+            restriccion-limite-uefa,
+            restriccion-bombos-pots,
+            restriccion-tamano-del-grupo,
+            restriccion-asignacion-valida-general,
+            heuristica-seleccion-mrv,
+            heuristica-mrv-ignora-variables-asignadas,
+            heuristica-forward-checking,
+            heuristica-fallo-en-forward-checking,
+            solver-encuentra-solucion-completa,
+            solver-solucion-cumple-4-equipos-por-grupo,
+            solver-validez-total-de-la-solucion,
+            solver-backtracking-sin-preasignacion
